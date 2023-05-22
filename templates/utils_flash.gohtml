@@ -1,0 +1,19 @@
+{{ define "utils/flash" }}
+
+    {{ range .Context|flashes}}
+        <article class="message
+        {{ if eq .Type "success" }}
+            is-success
+        {{else if eq .Type "warning" }}
+            is-warning
+        {{else if eq .Type "info" }}
+            is-info
+        {{else if eq .Type "error"}}
+            is-danger
+        {{ end}}">
+            <div class="message-body">
+                {{.Message}}
+            </div>
+        </article>
+    {{ end }}
+{{end}}

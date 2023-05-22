@@ -1,9 +1,23 @@
 {{ define "login/form" }}
     {{ template "base/header" . }}
-    <form action="/login" method="post">
-        <input type="text" name="username" placeholder="Username"/>
-        <input type="password" name="password" placeholder="Password"/>
-        <input type="submit" value="Login"/>
+    <form action="" method="post">
+
+
+        <div class="field">
+            <label class="label">Username</label>
+            <div class="control">
+                <input class="input" type="text" placeholder="username" name="username" value="{{.username}}">
+            </div>
+        </div>
+
+        <div class="field">
+            <label class="label">Password</label>
+            <div class="control">
+                <input class="input" type="password" placeholder="password" name="password">
+            </div>
+        </div>
+        {{ csrf .Context "login"  }}
+        <input class="button is-light" type="submit" value="Login"/>
     </form>
     {{ template "base/footer" . }}
 {{ end }}

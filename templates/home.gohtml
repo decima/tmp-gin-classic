@@ -1,0 +1,6 @@
+{{ define "home/index" }}
+    {{ template "base/header" . }}
+        Welcome to you, {{ .Context|loggedUser }}!
+
+    {{ template "base/footer" . }}
+{{ end }}
