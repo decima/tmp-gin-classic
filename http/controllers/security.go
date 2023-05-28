@@ -28,7 +28,7 @@ func (controller LoginController) Login(c *gin.Context) {
 	if c.Request.Method == http.MethodPost {
 		if err := security.TryLogin(c, userInput.Username, userInput.Password); err != nil {
 			log.Println(err)
-			cookies.AddErrorFlash(c, "Invalid username or password")
+			_ = cookies.AddErrorFlash(c, "Invalid username or password")
 			c.Redirect(http.StatusFound, "/login")
 			return
 		}
@@ -46,6 +46,6 @@ func (controller LoginController) Login(c *gin.Context) {
 }
 
 func (controller LoginController) Logout(c *gin.Context) {
-	security.Logout(c)
+	_ = security.Logout(c)
 	c.Redirect(http.StatusFound, "/login")
 }

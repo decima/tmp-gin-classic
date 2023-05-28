@@ -6,15 +6,15 @@ import (
 )
 
 type PingController struct {
-	*utils.DefaultController
+	*utils.DefaultController `route:"/ping"`
 }
 
 func (controller PingController) Register(publicRoutes, securedRoutes *gin.RouterGroup) {
-	publicRoutes.GET("/ping", func(c *gin.Context) {
+	publicRoutes.GET("", func(c *gin.Context) {
 		c.JSON(204, nil)
 	})
 
-	securedRoutes.GET("/securedPing", func(c *gin.Context) {
+	securedRoutes.GET("/secured", func(c *gin.Context) {
 		c.JSON(200, "ok")
 	})
 }

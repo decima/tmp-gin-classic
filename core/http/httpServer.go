@@ -2,16 +2,18 @@ package http
 
 import (
 	cryptorand "crypto/rand"
+	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"reflect"
 	"sigomid/core/http/utils/cookies"
 	"sigomid/core/http/utils/security"
 	"text/template"
 )
 
-type RoutesRegistrar interface {
+type ControllerInterface interface {
 	SetConfiguration(ServerConfiguration)
 	Register(publicRoutes, securedRoutes *gin.RouterGroup)
 }
@@ -32,7 +34,7 @@ type Server struct {
 	sessionStorage sessions.Store
 }
 
-func (s *Server) Start(routesRegistrar ...RoutesRegistrar) error {
+func (s *Server) Start(routesRegistrar ...ControllerInterface) error {
 
 	buf := make([]byte, 128)
 	cryptorand.Read(buf)
@@ -79,7 +81,8 @@ func (s *Server) Start(routesRegistrar ...RoutesRegistrar) error {
 	publicRoutes := r.Group("")
 	for _, controller := range routesRegistrar {
 		controller.SetConfiguration(*s.Configuration)
-		controller.Register(publicRoutes, sessionSecuredRoutes)
+		settings := extractTagsConfiguration(controller)
+		controller.Register(publicRoutes.Group(settings.RouterPrefix), sessionSecuredRoutes.Group(settings.RouterPrefix))
 	}
 
 	return r.Run(s.Configuration.HostAndPort)
@@ -96,4 +99,20 @@ func (s *Server) secureArea(c *gin.Context) {
 
 	c.Next()
 
+}
+
+type controllerConfiguration struct {
+	RouterPrefix string
+}
+
+func extractTagsConfiguration(controller ControllerInterface) controllerConfiguration {
+	rv := reflect.ValueOf(controller)
+	t := rv.Type()
+	controllerConfiguration := controllerConfiguration{}
+	for i := 0; i < t.NumField(); i++ {
+		if value, ok := t.Field(i).Tag.Lookup("route"); ok {
+			controllerConfiguration.RouterPrefix = fmt.Sprintf("%v", value)
+		}
+	}
+	return controllerConfiguration
 }

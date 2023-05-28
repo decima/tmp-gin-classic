@@ -5,9 +5,9 @@ import (
 	"sigomid/core/http/utils"
 )
 
-func RegisteredControllers() []http.RoutesRegistrar {
+func RegisteredControllers() []http.ControllerInterface {
 
-	return []http.RoutesRegistrar{
+	return []http.ControllerInterface{
 		PingController{&utils.DefaultController{}},
 		LoginController{&utils.DefaultController{}},
 		HomeController{&utils.DefaultController{}},
