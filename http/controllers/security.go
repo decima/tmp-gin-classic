@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"sigomid/core/http/utils"
+	"sigomid/core/http/utils/controllers"
 	"sigomid/core/http/utils/cookies"
 	"sigomid/core/http/utils/security"
 	"sigomid/core/http/utils/view"
@@ -12,16 +12,24 @@ import (
 )
 
 type LoginController struct {
-	*utils.DefaultController
+	*controllers.DefaultController
+	LoginGet  gin.HandlerFunc `route:"/login" method:"GET"`
+	LoginPost gin.HandlerFunc `route:"/login" method:"POST"`
+	Logout    gin.HandlerFunc `route:"/logout" method:"GET"`
 }
 
-func (controller LoginController) Register(publicRoutes, securedRoutes *gin.RouterGroup) {
-	publicRoutes.GET("/login", controller.Login)
-	publicRoutes.POST("/login", controller.Login)
-	publicRoutes.GET("/logout", controller.Logout)
+func init() {
+
+	controller := &LoginController{
+		DefaultController: &controllers.DefaultController{},
+	}
+	controller.LoginGet = controller.loginAction
+	controller.LoginPost = controller.loginAction
+	controller.Logout = controller.logoutAction
+	controllers.Register(controller)
 }
 
-func (controller LoginController) Login(c *gin.Context) {
+func (controller LoginController) loginAction(c *gin.Context) {
 	var userInput dataObjects.LoginForm
 	c.Bind(&userInput)
 
@@ -45,7 +53,7 @@ func (controller LoginController) Login(c *gin.Context) {
 
 }
 
-func (controller LoginController) Logout(c *gin.Context) {
+func (controller LoginController) logoutAction(c *gin.Context) {
 	_ = security.Logout(c)
 	c.Redirect(http.StatusFound, "/login")
 }

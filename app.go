@@ -5,7 +5,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"sigomid/core/http"
-	"sigomid/http/controllers"
+	"sigomid/core/http/utils/configuration"
 )
 
 var store sessions.Store
@@ -17,13 +17,13 @@ func init() {
 }
 
 func main() {
-	httpServer := http.Server{Configuration: &http.ServerConfiguration{
+	httpServer := http.Server{Configuration: &configuration.ServerConfiguration{
 		HostAndPort: ":8000",
-		Security: http.ServerSecurityConfiguration{
+		Security: configuration.ServerSecurityConfiguration{
 			Enable:                      true,
 			RedirectOnUnauthorizedPath:  "/login",
 			RedirectOnLogin:             "/",
 			UsePreviousIfDefinedOnLogin: false}}}
 
-	panic(httpServer.Start(controllers.RegisteredControllers()...))
+	panic(httpServer.Start())
 }

@@ -2,39 +2,26 @@ package http
 
 import (
 	cryptorand "crypto/rand"
-	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"reflect"
+	"sigomid/core/http/utils/configuration"
+	"sigomid/core/http/utils/controllers"
 	"sigomid/core/http/utils/cookies"
 	"sigomid/core/http/utils/security"
+
 	"text/template"
+
+	_ "sigomid/http/controllers"
 )
 
-type ControllerInterface interface {
-	SetConfiguration(ServerConfiguration)
-	Register(publicRoutes, securedRoutes *gin.RouterGroup)
-}
-type ServerConfiguration struct {
-	HostAndPort string
-	Security    ServerSecurityConfiguration
-}
-
-type ServerSecurityConfiguration struct {
-	Enable                      bool
-	RedirectOnUnauthorizedPath  string
-	RedirectOnLogin             string
-	UsePreviousIfDefinedOnLogin bool
-}
-
 type Server struct {
-	Configuration  *ServerConfiguration
+	Configuration  *configuration.ServerConfiguration
 	sessionStorage sessions.Store
 }
 
-func (s *Server) Start(routesRegistrar ...ControllerInterface) error {
+func (s *Server) Start() error {
 
 	buf := make([]byte, 128)
 	cryptorand.Read(buf)
@@ -75,44 +62,18 @@ func (s *Server) Start(routesRegistrar ...ControllerInterface) error {
 	})
 	r.LoadHTMLGlob("templates/*")
 
-	sessionSecuredRoutes := r.Group("")
-	sessionSecuredRoutes.Use(s.secureArea)
+	for _, controller := range controllers.GetComputed(*s.Configuration) {
 
-	publicRoutes := r.Group("")
-	for _, controller := range routesRegistrar {
-		controller.SetConfiguration(*s.Configuration)
-		settings := extractTagsConfiguration(controller)
-		controller.Register(publicRoutes.Group(settings.RouterPrefix), sessionSecuredRoutes.Group(settings.RouterPrefix))
+		for _, action := range controller.Actions {
+			roleResolverRouter := r.Group("", security.RoleMiddlewareResolver(*s.Configuration, action.Group))
+			if action.Method == controllers.ANY_METHOD {
+				roleResolverRouter.Any(action.Route, action.Do)
+				continue
+			}
+			roleResolverRouter.Handle(action.Method, action.Route, action.Do)
+		}
+
 	}
 
 	return r.Run(s.Configuration.HostAndPort)
-}
-
-func (s *Server) secureArea(c *gin.Context) {
-	session := sessions.Default(c)
-	user := session.Get("user")
-
-	if s.Configuration.Security.Enable && user == nil {
-		c.Redirect(302, s.Configuration.Security.RedirectOnUnauthorizedPath)
-		return
-	}
-
-	c.Next()
-
-}
-
-type controllerConfiguration struct {
-	RouterPrefix string
-}
-
-func extractTagsConfiguration(controller ControllerInterface) controllerConfiguration {
-	rv := reflect.ValueOf(controller)
-	t := rv.Type()
-	controllerConfiguration := controllerConfiguration{}
-	for i := 0; i < t.NumField(); i++ {
-		if value, ok := t.Field(i).Tag.Lookup("route"); ok {
-			controllerConfiguration.RouterPrefix = fmt.Sprintf("%v", value)
-		}
-	}
-	return controllerConfiguration
 }

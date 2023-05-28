@@ -12,24 +12,49 @@ func init() {
 	gob.Register(gin.H{})
 }
 
+var roleHierarchy = map[string][]string{
+	"ROLE_ADMIN": {"ROLE_USER"},
+	"ROLE_USER":  {},
+}
+
 type User struct {
-	Username string
+	Username string   `json:"username"`
+	Roles    []string `json:"roles"`
+}
+
+func (u User) String() string {
+
+	return u.Username
+}
+
+func (u User) HasRole(role string) bool {
+	for _, r := range u.Roles {
+		if r == role {
+			return true
+		}
+		for _, rr := range roleHierarchy[r] {
+			if rr == role {
+				return true
+			}
+		}
+
+	}
+	return false
 }
 
 const sessionKey = "user"
 
 func IsLogged(c *gin.Context) bool {
-	session := sessions.Default(c)
-	return session.Get(sessionKey) != nil
+	return LoggedUser(c).Username != ""
 }
 
-func LoggedUser(c *gin.Context) any {
+func LoggedUser(c *gin.Context) User {
 	session := sessions.Default(c)
 	u := session.Get(sessionKey)
 	if u != nil {
-		return u
+		return u.(User)
 	}
-	return nil
+	return User{}
 }
 
 func TryLogin(c *gin.Context, username string, password string) error {
@@ -40,18 +65,19 @@ func TryLogin(c *gin.Context, username string, password string) error {
 		return errors.New("invalid credentials")
 	}
 
-	return login(c, User{username})
-
+	return login(c, User{Username: username, Roles: []string{"ROLE_ADMIN"}})
 }
 
 func login(c *gin.Context, user User) error {
 	session := sessions.Default(c)
-	session.Set("user", user.Username)
+	session.Set("user", user)
+
 	return session.Save()
 }
 
 func Logout(c *gin.Context) error {
 	session := sessions.Default(c)
 	session.Delete(sessionKey)
+
 	return session.Save()
 }

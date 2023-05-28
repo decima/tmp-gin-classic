@@ -2,18 +2,20 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"sigomid/core/http/utils"
+	"sigomid/core/http/utils/controllers"
 	"sigomid/core/http/utils/view"
 )
 
 type HomeController struct {
-	*utils.DefaultController
+	*controllers.DefaultController
+	Index gin.HandlerFunc `route:"/" method:"GET"`
 }
 
-func (h HomeController) Register(publicRoutes, securedRoutes *gin.RouterGroup) {
-	publicRoutes.GET("/", landingPage)
-}
-
-func landingPage(c *gin.Context) {
-	view.Render(c, 200, "home/index", gin.H{})
+func init() {
+	controllers.Register(&HomeController{
+		DefaultController: &controllers.DefaultController{},
+		Index: func(c *gin.Context) {
+			view.Render(c, 200, "home/index", gin.H{})
+		},
+	})
 }
